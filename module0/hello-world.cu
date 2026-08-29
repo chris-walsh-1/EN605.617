@@ -5,6 +5,7 @@
 // http://computer-graphics.se/hello-world-for-cuda.html
  
 #include <stdio.h>
+#include <cuda_runtime.h>
  
 const int N = 16; 
 const int blocksize = 16; 

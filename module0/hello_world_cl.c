@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 	err =  clGetPlatformIDs(1,&platform,&no_plat);
 
 	// Where to run
-	err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+	err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 1, &device_id, NULL);
 	if (err != CL_SUCCESS) return -1;
 	context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
 	if (!context) return -1;
