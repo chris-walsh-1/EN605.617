@@ -4,8 +4,8 @@
 
 #include <stdio.h>
 
-#define N 16
-#define BLOCK_SIZE 16
+#define N 32768
+#define BLOCK_SIZE 256
 #define NUM_BLOCKS N/BLOCK_SIZE
 
 #define ARRAY_SIZE N
@@ -18,7 +18,7 @@ __global__
 void hello(int * block)
 {
 	const unsigned int thread_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-	block[thread_idx] = threadIdx.x;
+	block[thread_idx] = blockIdx.x;
 }
 
 void main_sub()
