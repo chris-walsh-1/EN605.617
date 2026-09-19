@@ -100,16 +100,23 @@ int main(int argc, char** argv)
 	cudaMemcpy(dev_r, r, totalThreads * sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_g, g, totalThreads * sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_b, b, totalThreads * sizeof(int), cudaMemcpyHostToDevice);
+	cudaDeviceSynchronize(); 
 	auto stopTransferToGPU = std::chrono::high_resolution_clock::now();
 	/***** END PART 2 *****/
 
 	/***** PART 3: COLOR TO GRAYSCALE GPU AND CPU *****/
+	//Lazy way to load our kernel module for accurate timing
+	toGrayscaleGPU<<<numBlocks,blockSize>>> (dev_r, dev_g, dev_b, dev_gr); 
+	cudaDeviceSynchronize(); 
+
 	auto startGPU = std::chrono::high_resolution_clock::now();
 	toGrayscaleGPU<<<numBlocks,blockSize>>> (dev_r, dev_g, dev_b, dev_gr); //Run our color-to-grayscale conversion on GPU
+	cudaDeviceSynchronize(); //Wait for GPU to finish before continuing
 	auto stopGPU = std::chrono::high_resolution_clock::now();
 
 	auto startTransferFromGPU = std::chrono::high_resolution_clock::now();
 	cudaMemcpy(gr_gpu, dev_gr, totalThreads*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaDeviceSynchronize(); 
 	auto stopTransferFromGPU = std::chrono::high_resolution_clock::now();
 
 	//CPU concurrency via threads inspired by code from EN.605.767 - Applied Computer Graphics course source code
@@ -135,14 +142,19 @@ int main(int argc, char** argv)
 	/***** END PART 3 *****/
 
 	/***** PART 4: BLACK/WHITE THRESHOLD MAPPING GPU AND CPU *****/
-	int blackWhiteThreshold = 128;
-
+	int blackWhiteThreshold = 32;
+	//Lazy way to load our kernel module for accurate timing
+	blackWhiteMapGPU<<<numBlocks,blockSize>>> (dev_r, dev_g, dev_b, dev_bw, blackWhiteThreshold); //run our color to black-white map on GPU
+	cudaDeviceSynchronize(); //Wait for GPU to finish before continuing
+	
 	auto startGPU2 = std::chrono::high_resolution_clock::now();
 	blackWhiteMapGPU<<<numBlocks,blockSize>>> (dev_r, dev_g, dev_b, dev_bw, blackWhiteThreshold); //run our color to black-white map on GPU
+	cudaDeviceSynchronize(); //Wait for GPU to finish before continuing
 	auto stopGPU2 = std::chrono::high_resolution_clock::now();
 
 	auto startTransferFromGPU2 = std::chrono::high_resolution_clock::now();
 	cudaMemcpy(bw_gpu, dev_bw, totalThreads*sizeof(int), cudaMemcpyDeviceToHost);
+	cudaDeviceSynchronize(); 
 	auto stopTransferFromGPU2 = std::chrono::high_resolution_clock::now();
 
 	start_row = 0; //reset row counter
