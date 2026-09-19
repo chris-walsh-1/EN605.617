@@ -109,7 +109,7 @@ In both the no branching and branching kernels, the GPU compute time when consid
 
 The results for the no branching and branching kernels when executed on the GPU are mixed and do not exactly line up with my expectations. While it is true that generally the branching kernel takes longer than the no branching kernel, I think the randomness of the data and measurement noise contribute to a less uniform result. I believe the results still show the slowdown in execution expected with a branching kernel, but not to the extent I initially expected.
 
-#### Previous solution Commentary
+### Previous solution Commentary
 
 The previous submission to this assignment has a couple of subtle issues in variable naming and misses an important piece of application timing.
 
