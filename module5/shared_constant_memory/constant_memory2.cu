@@ -90,7 +90,7 @@ __host__ void generate_rand_data(u32 * host_data_ptr)
 
 __host__ void gpu_kernel(void)
 {
-	const u32 num_elements = (128*1024);
+	const u32 num_elements = (128*1024)*8;
 	const u32 num_threads = 256;
 	const u32 num_blocks = (num_elements + (num_threads-1))/num_threads;
 	const u32 num_bytes = num_elements * sizeof(u32);
@@ -128,6 +128,8 @@ __host__ void gpu_kernel(void)
 			const_test_gpu_gmem <<<num_blocks, num_threads>>>(data_gpu, num_elements);
 			cuda_error_check("Error ", " returned from literal runtime  kernel!");
 
+			cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
+
 			cudaEventRecord(kernel_start1,0);
 
 			const_test_gpu_gmem <<<num_blocks, num_threads>>>(data_gpu, num_elements);
@@ -142,6 +144,8 @@ __host__ void gpu_kernel(void)
 			const_test_gpu_const<<< num_blocks, num_threads >>>(data_gpu, num_elements);
 
 			cuda_error_check("Error ", " returned from literal startup  kernel!");
+						
+			cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
 
 			cudaEventRecord(kernel_start2,0);
 
@@ -155,11 +159,11 @@ __host__ void gpu_kernel(void)
 
 			if(delta_time1 > delta_time2)
 			{
-				printf("\n%sConstant version is faster by: %.2fms (G=%.2fms vs. C=%.2fms)",device_prefix, delta_time1-delta_time2, delta_time1, delta_time2);
+				printf("\n%sConstant version is faster by: %.5fms (G=%.5fms vs. C=%.5fms)",device_prefix, delta_time1-delta_time2, delta_time1, delta_time2);
 			}
 			else
 			{
-				printf("\n%sGMEM version is faster by: %.2fms (G=%.2fms vs. C=%.2fms)",device_prefix, delta_time2-delta_time1, delta_time1, delta_time2);
+				printf("\n%sGMEM version is faster by: %.5fms (G=%.5fms vs. C=%.5fms)",device_prefix, delta_time2-delta_time1, delta_time1, delta_time2);
 			}
 
 		}
@@ -173,7 +177,7 @@ __host__ void gpu_kernel(void)
 		cudaDeviceReset();
 		printf("\n");
 	}
-	wait_exit();
+	// wait_exit();
 }
 
 __host__ __device__ unsigned int bitreverse(unsigned int number) {
@@ -209,15 +213,16 @@ void execute_gpu_functions()
 	cudaMalloc((void**) &d, sizeof(int) * WORK_SIZE);
 	cudaMemcpy(d, idata, sizeof(int) * WORK_SIZE, cudaMemcpyHostToDevice);
 
-	const_test_gpu_const<<<1, WORK_SIZE>>>(d,WORK_SIZE);
+	// const_test_gpu_const<<<1, WORK_SIZE>>>(d,WORK_SIZE);
+	gpu_kernel();
 
 	cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
 	cudaGetLastError();
 	cudaMemcpy(odata, d, sizeof(int) * WORK_SIZE, cudaMemcpyDeviceToHost);
 
-	for (i = 0; i < WORK_SIZE; i++){
-		printf("Input value: %u, device output: %u, host output: %u\n",idata[i], odata[i], bitreverse(idata[i]));
-	}	
+	// for (i = 0; i < WORK_SIZE; i++){
+	// 	printf("Input value: %u, device output: %u, host output: %u\n",idata[i], odata[i], bitreverse(idata[i]));
+	// }	
 
 	cudaFree((void*) d);
 	cudaDeviceReset();

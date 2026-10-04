@@ -13,7 +13,7 @@
 
 #define KERNEL_LOOP 65536
 
-#define WORK_SIZE 256
+#define WORK_SIZE 256*100
 
 typedef unsigned short int u16;
 typedef unsigned int u32;
@@ -71,21 +71,21 @@ __host__ void gpu_kernel(void) {
 
 		for (int num_test = 0; num_test < max_runs; num_test++) {
 			unsigned int * data_gpu;
-			cudaEvent_t kernel_start1, kernel_stop1;
-			cudaEvent_t kernel_start2, kernel_stop2;
-			float delta_time1 = 0.0f, delta_time2 = 0.0F;
+			cudaEvent_t literal_start, literal_stop;
+			cudaEvent_t const_start, const_stop;
+			float literal_time = 0.0f, const_time = 0.0F;
 			struct cudaDeviceProp device_prop;
 			char device_prefix[261];
 
 			cudaMalloc(&data_gpu, num_bytes);
-			cudaEventCreate(&kernel_start1);
-			cudaEventCreate(&kernel_start2);
+			cudaEventCreate(&literal_start);
+			cudaEventCreate(&const_start);
 			
-					cudaEventCreateWithFlags(&kernel_stop1,
-							cudaEventBlockingSync);
-			
-					cudaEventCreateWithFlags(&kernel_stop2,
-							cudaEventBlockingSync);
+			cudaEventCreateWithFlags(&literal_stop,
+					cudaEventBlockingSync);
+	
+			cudaEventCreateWithFlags(&const_stop,
+					cudaEventBlockingSync);
 
 			cudaGetDeviceProperties(&device_prop, device_num);
 			sprintf(device_prefix, "ID: %d %s:", device_num, device_prop.name);
@@ -93,21 +93,31 @@ __host__ void gpu_kernel(void) {
 			const_test_gpu_literal<<<num_blocks, num_threads>>>(data_gpu,
 					num_elements);
 
+			cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
+
 //			cuda_error_check("Error ",
 //					" returned from literal startup  kernel!");
 
-			cudaEventRecord(kernel_start1, 0);
+			cudaEventRecord(literal_start, 0);
 			const_test_gpu_literal<<<num_blocks, num_threads>>>(data_gpu,
 					num_elements);
 
 //			cuda_error_check("Error ",
 //					" returned from literal runtime  kernel!");
 
-			cudaEventRecord(kernel_stop1, 0);
-			cudaEventSynchronize(kernel_stop1);
+			cudaEventRecord(literal_stop, 0);
+			cudaEventSynchronize(literal_stop);
 			
-					cudaEventElapsedTime(&delta_time1, kernel_start1,
-							kernel_stop1);
+			cudaEventElapsedTime(&literal_time, literal_start,
+					literal_stop);
+
+
+			const_test_gpu_const<<<num_blocks, num_threads>>>(data_gpu,
+					num_elements);
+
+			cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
+			
+			cudaEventRecord(const_start, 0);
 
 			const_test_gpu_const<<<num_blocks, num_threads>>>(data_gpu,
 					num_elements);
@@ -115,28 +125,28 @@ __host__ void gpu_kernel(void) {
 //			cuda_error_check("Error ",
 //					" returned from literal startup  kernel!");
 
-			cudaEventRecord(kernel_stop2, 0);
-			cudaEventSynchronize(kernel_stop2);
+			cudaEventRecord(const_stop, 0);
+			cudaEventSynchronize(const_stop);
 			
-					cudaEventElapsedTime(&delta_time2, kernel_start2,
-							kernel_stop2);
+			cudaEventElapsedTime(&const_time, const_start,
+					const_stop);
 
-			if (delta_time1 > delta_time2) {
+			if (literal_time > const_time) {
 				printf(
-						"\n%sConstant version is faster by: %.2fms (Const=%.2fms vs. Literal=%.2fms)",
-						device_prefix, delta_time1 - delta_time2, delta_time1,
-						delta_time2);
+						"\n%sConstant version is faster by: %.5fms (Const=%.5fms vs. Literal=%.5fms)",
+						device_prefix, literal_time - const_time, const_time,
+						literal_time);
 			} else {
 				printf(
-						"\n%sLiteral version is faster by: %.2fms (Const=%.2fms vs. Literal=%.2fms)",
-						device_prefix, delta_time2 - delta_time1, delta_time1,
-						delta_time2);
+						"\n%sLiteral version is faster by: %.5fms (Const=%.5fms vs. Literal=%.5fms)",
+						device_prefix, const_time - literal_time, const_time,
+						literal_time);
 			}
 
-			cudaEventDestroy(kernel_start1);
-			cudaEventDestroy(kernel_start2);
-			cudaEventDestroy(kernel_stop1);
-			cudaEventDestroy(kernel_stop2);
+			cudaEventDestroy(literal_start);
+			cudaEventDestroy(const_start);
+			cudaEventDestroy(literal_stop);
+			cudaEventDestroy(const_stop);
 			cudaFree(data_gpu);
 		}
 
@@ -189,15 +199,16 @@ void execute_gpu_functions()
 	
 	cudaMemcpy(data, idata, sizeof(unsigned int) * WORK_SIZE, cudaMemcpyHostToDevice);
 
-	const_test_gpu_literal<<<num_blocks,num_threads>>>(data, WORK_SIZE);
+	// const_test_gpu_literal<<<num_blocks,num_threads>>>(data, WORK_SIZE);
+	gpu_kernel();
 	cudaDeviceSynchronize();	// Wait for the GPU launched work to complete
 	cudaGetLastError();
 	
 	cudaMemcpy(odata, data, sizeof(int) * WORK_SIZE, cudaMemcpyDeviceToHost);
 
-	for (i = 0; i < WORK_SIZE; i++) {
-		printf("Input value: %u, device output: %u\n", idata[i], odata[i]);
-	}
+	// for (i = 0; i < WORK_SIZE; i++) {
+	// 	printf("Input value: %u, device output: %u\n", idata[i], odata[i]);
+	// }
 	
 	cudaFree((void* ) data);
 	cudaDeviceReset();
