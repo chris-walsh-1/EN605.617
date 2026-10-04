@@ -177,12 +177,12 @@ __global__ void rayTraceKernel(Triangle* triangle, int* output)
     float screenX = ((float)x / (float)d_screenWidth) - 0.5f; //Normalize x coordinate to [-0.5, 0.5]
     float screenY = ((float)y / (float)d_screenHeight) - 0.5f; //Normalize y coordinate to [-0.5, 0.5]
 
-    Vec3 screenPoint = makeVec3(screenX, screenY, 0.0f); 
+    Vec3 screenPoint = makeVec3(screenX, screenY, 0.0f); //Get a point representing the pixel
     Vec3 direction = vecSubtract(screenPoint, d_camera); //Calculate the direction of a ray through the pixel
 
     direction = vecNormalize(direction); //Normalize the direction vector
 
-    int hit = rayTriangleIntersect(d_camera, direction, sharedTriangle);
+    int hit = rayTriangleIntersect(d_camera, direction, sharedTriangle); //Check if the ray intersects the triangle
 
     output[pixel] = hit;
 }
@@ -221,9 +221,16 @@ int main(int argc, char** argv)
     cudaMalloc((void**)&d_triangle, sizeof(Triangle));
     cudaMalloc((void**)&d_output, totalPixels * sizeof(int));
 
+    cudaEvent_t kernel_start1, kernel_stop1;
+    float delta_time1 = 0.0f;
+
+    cudaEventCreate(&kernel_start1);
+    cudaEventCreateWithFlags(&kernel_stop1, cudaEventBlockingSync);
+
     cudaMemcpy(d_triangle, triangle, sizeof(Triangle), cudaMemcpyHostToDevice);
 
-    float epsilon = 1.0e-5; //Epsilon for ray-triangle intersection to account for floating point rounding errors
+    //Epsilon for ray-triangle intersection to account for floating point rounding errors
+    float epsilon = 1.0e-5; 
 
     cudaMemcpyToSymbol(d_screenWidth, &screenWidth, sizeof(int));
     cudaMemcpyToSymbol(d_screenHeight, &screenHeight, sizeof(int));
@@ -233,6 +240,16 @@ int main(int argc, char** argv)
     int blocks = (totalPixels + blockSize -1) / blockSize;
 
     rayTraceKernel<<<blocks, blockSize>>>(d_triangle, d_output);
+
+    cudaDeviceSynchronize();
+
+    cudaEventRecord(kernel_start1,0);
+
+    rayTraceKernel<<<blocks, blockSize>>>(d_triangle, d_output);
+
+    cudaEventRecord(kernel_stop1,0);
+    cudaEventSynchronize(kernel_stop1);
+    cudaEventElapsedTime(&delta_time1, kernel_start1, kernel_stop1);
 
     cudaDeviceSynchronize();
 
@@ -249,6 +266,7 @@ int main(int argc, char** argv)
     }
 
     printf("Pixels hitting triangle: %d\n", hitCount);
+    printf("Ray trace kernel took: %.5fms ", delta_time1);
 
     cudaFree(d_triangle);
     cudaFree(d_output);
