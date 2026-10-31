@@ -40,7 +40,7 @@
 # This example shows form (3) — multiple configurations — for both
 # "build" and "run".
 
-folder: module6
+folder: module9
 
 build:
   # config 1 (dict form) -> ./build.sh --target debug --verbose true
@@ -48,15 +48,16 @@ build:
 
 run:
   # config 1 (list form) -> ./run.sh input.txt
-  - [128 256 256]
-  - [128 512 512]
-  - [128 1024 1024]
-  - [256 256 256]
-  - [256 512 512]
-  - [256 1024 1024]
-  - [512 256 256]
-  - [512 512 512]
-  - [512 1024 1024]
+  - [256 256]
+  - [512 256]
+  - [1024 256]
+  - [2048 256]
+  - [4096 256]
+  - [8192 256]
+  - [16384 256]
+  - [32768 256]
+  - [65536 256]
+  - [131072 256]
 
 # --- Single-configuration equivalent (form 1 / form 2), for reference ---
 # build:
