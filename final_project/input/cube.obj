@@ -1,0 +1,25 @@
+# A cube with side length 1, centered at the origin
+v -0.5 -0.5 -0.5
+v  0.5 -0.5 -0.5
+v  0.5  0.5 -0.5
+v -0.5  0.5 -0.5
+v -0.5 -0.5  0.5
+v  0.5 -0.5  0.5
+v  0.5  0.5  0.5
+v -0.5  0.5  0.5
+
+# One normal per face direction
+vn  0.0  0.0  1.0
+vn  0.0  0.0 -1.0
+vn  1.0  0.0  0.0
+vn -1.0  0.0  0.0
+vn  0.0  1.0  0.0
+vn  0.0 -1.0  0.0
+
+# Six quad faces, counter-clockwise when viewed from outside
+f 5//1 6//1 7//1 8//1   # +Z
+f 1//2 4//2 3//2 2//2   # -Z
+f 2//3 3//3 7//3 6//3   # +X
+f 1//4 5//4 8//4 4//4   # -X
+f 4//5 8//5 7//5 3//5   # +Y
+f 1//6 2//6 6//6 5//6   # -Y

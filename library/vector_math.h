@@ -1,3 +1,5 @@
+#pragma once
+
 /***** Vec3 struct and functions generated with the assistance of Chat GPT. *****/
 /* 
     Prompt: Generate a struct for me representing a 3D vector. 
