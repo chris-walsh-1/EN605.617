@@ -342,6 +342,9 @@ int main(int argc, char** argv)
 
     /***** Set up renderer. Code adapted from lab code used in EN 605.767 - Applied computer graphics ******/
     // Initialize SDL
+    #ifdef __linux__
+        setenv("SDL_VIDEODRIVER", "x11", 1);
+    #endif
     if(!SDL_Init(SDL_INIT_VIDEO))
     {
         std::cout << "Error initializing SDL: " << SDL_GetError() << '\n';
